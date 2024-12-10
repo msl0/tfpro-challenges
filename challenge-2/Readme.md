@@ -1,7 +1,8 @@
 
 ## Challenge 2
 
-This challenge is primarily designed to test your understanding of Modules by requiring you to refactor large configuration by splitting into multiple child  modules.
+This challenge tests your understanding of Terraform Modules by requiring you to refactor a monolithic configuration into multiple child modules.
+
 
 
 ### Tasks:
@@ -12,14 +13,14 @@ Deploy all the resources by running `terraform apply -auto-approve`
 
 #### 2. Replace Hard Coded Value with Data Source
 
-Use the `aws_ami` data source to replace the hardcoded AMI ID from the configuration and fetch the value dynamically.
+Use the `aws_ami` data source to replace the hardcoded AMI ID from the `aws_instance` resource type and fetch the value dynamically.
 
 > [!CAUTION]
-> The EC2 instance should not be recreated and must use same AMI ID as Step 1.
+> The EC2 instance should not be recreated and it must use same AMI ID as Step 1.
 
 #### 3. Split to Multiple Modules
 
-Split the code into multiple child modules as described in below table
+Split (Move) the existing code into multiple child modules as described in below table. Each child module must be inside the `modules` folder.
 
 | Resources  | Child Module Name | 
 | :---        |    :----:   | 
@@ -29,36 +30,53 @@ Split the code into multiple child modules as described in below table
 | `aws_s3_bucket`  | s3        |
 | `aws_s3_object`  | s3        |  
 | `aws_iam_*`  | iam      | 
-| Random Pet  | random      | 
+| `random_pet`  |  random      | 
 
-Run the `terraform init` command to re-initialize.
+
+* Do NOT modify the main resource configuration code that were moved inside the child modules.
+* Configure appropriate module sources in the root module to load all child modules.
+* Add appropriate variables in child modules.
+
+* Run the `terraform init` command to re-initialize. Ensure there are no errors.
 
 #### 4. Temporarily Add Hardcoded Values
 
-Comment out `bucket` argument in S3 module and add a new argument with hardcoded value.
-Comment out `name` argument in IAM  module and add a new argument with hardcoded value.
-Comment out `instance_profile` argument in EC2 module and add a new argument with hardcoded value.
+In places where string interpolation was used to fetch `random_pet` value, comment out the existing argument and manually hardcode the `random_pet` with actual value from state file.
 
+Example:
+```sh
+# Replace this:
+test = "${random_pet.name}"
+
+# With this:
+test = "hardcoded-value-from-state"
+```
+For EC2 instance, manually hardcode the final value of `instance_profile` that is part of state file and comment out the previous argument.
 
 Ensure there are no errors when you run `terraform plan`
 
 #### 5. Configure Addressing
 
-Change the resource address in state file so that it reflects the splitting of resources to multiple child modules.
+Update the resource address in state file to reflect the refactoring of monolithic configuration into multiple child modules.
 
 After completing previous step, run `terraform plan` and ensures there are no changes
 ```sh
 Plan: 0 to add, 0 to change, 0 to destroy.
 ```
-### 6. Remove the Hard Coded Values added in Step 4
+Ensure there are no warning message related to "Value for undeclared variable"
 
+
+### 6. Dynamic Value Implementation
+
+Remove temporary hardcoded values that were added in Step 4 and implement proper module outputs:
+
+* EC2 module: Should be able to fetch `iam_instance_profile` from IAM module
+* IAM module: Should be able to fetch `random_pet` value from random module
+* S3 module: Should be able to fetch `random_pet` value from random module
 * The hardcoded values that were added in Step 4 needs to be removed.
   
-* EC2 module must fetch the value of `iam_instance_profile` dynamically so that any change in value of `iam_instance_profile` can also be addressed in EC2 module.
-  
-* IAM and S3 module must fetch the values of random_pet dynamically similar to the previous step.
-  
-* After completing previous step, run `terraform apply` and ensure there are no changes.
+Run `terraform apply` and ensure there are no changes.
+
 
 #### 7. Destroy Infrastructure
 
